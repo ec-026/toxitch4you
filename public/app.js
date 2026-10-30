@@ -25,7 +25,16 @@ if(m.type==='status'){if(typeof m.paused==='boolean'&&characterApplied)setPause(
 if(m.type==='error'){$('lobbyError').textContent=m.reason||'Unable to join';desired=null}
 if(m.type==='key'&&codes[m.key]&&typeof m.down==='boolean'){if(m.down){if(!remoteHeld.has(m.key)){remoteHeld.add(m.key);flash('hknRemoteDown',codes[m.key])}}else{remoteHeld.delete(m.key);flash('hknRemoteUp',codes[m.key])}}
 if(m.type==='peer-left'){setPause(false);releaseRemote();hostStarted=false;guestStarted=false;selectionReadySent=false;showHostWait();if(role==='guest'){$('guestWait').hidden=false;$('character').textContent='Host disconnected. Waiting for Player 1...';}}};socket.onclose=e=>{releaseRemote();if(role){$('status').textContent='CONNECTION LOST — REJOIN ROOM';}else if(desired){$('lobbyError').textContent=e.code===1006?'Room unavailable, full, or connection failed.':'Connection closed. Please try again.';}socket=null};socket.onerror=()=>log('WebSocket connection error')}
-async function startGame(){try{if(!window.RufflePlayer)throw Error('Ruffle unavailable — check internet');player=window.RufflePlayer.newest().createPlayer();player.config={autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true};$('game').appendChild(player);await player.ruffle().load('hongkongninja.swf');setInterval(checkBridge,600)}catch(e){log('Game error: '+e.message)}}
+async function startGame(){try{
+  if(!window.RufflePlayer)throw Error('Ruffle unavailable — check internet');
+  // HEAD preflight avoids downloading the 6 MB game twice.
+  for(const path of ['/hongkongninja.swf','/resource/level_1.swf']){
+    const result=await fetch(path,{method:'HEAD',cache:'no-store'});
+    if(!result.ok)throw Error(path+' returned HTTP '+result.status);
+    if(!/shockwave-flash|octet-stream/i.test(result.headers.get('content-type')||''))
+      throw Error(path+' has incorrect content type: '+result.headers.get('content-type'));
+  }
+player=window.RufflePlayer.newest().createPlayer();player.config={autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true};$('game').appendChild(player);await player.ruffle().load({url:location.origin+'/hongkongninja.swf',base:location.origin+'/'});setInterval(checkBridge,600)}catch(e){$('status').textContent='GAME LOAD FAILED: '+e.message;console.error('Ruffle load failure',e);}}
 function showHostWait(){
  const mask=$('hostWait');if(!mask)return;
  mask.hidden=!(role==='host'&&hostCharacter!==null&&!hostStarted);

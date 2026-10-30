@@ -3,7 +3,7 @@
   "name": "toxitch4you",
   "main": "src/worker.js",
   "compatibility_date": "2026-10-30",
-  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/ws"] },
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/ws", "/*.swf", "/resource/*.swf"] },
   "durable_objects": { "bindings": [{ "name": "GAME_ROOMS", "class_name": "GameRoom" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }]
 }

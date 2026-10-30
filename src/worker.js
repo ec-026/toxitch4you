@@ -106,6 +106,17 @@ export default {
       const id=env.GAME_ROOMS.idFromName('hkn:'+room);
       return env.GAME_ROOMS.get(id).fetch(request);
     }
+    // Ruffle dynamically loads additional level_*.swf files. Serve them with an
+    // explicit Flash MIME type, so edge MIME inference and nosniff cannot block them.
+    if (/^\/(?:hongkongninja|resource\/level_[1-6])\.swf$/.test(url.pathname)) {
+      const asset = await env.ASSETS.fetch(request);
+      if (!asset.ok) return new Response('Missing Flash game asset: '+url.pathname,{status:asset.status});
+      const headers = new Headers(asset.headers);
+      headers.set('Content-Type','application/x-shockwave-flash');
+      headers.set('X-Content-Type-Options','nosniff');
+      headers.set('Cache-Control','public, max-age=3600');
+      return new Response(asset.body,{status:asset.status,headers});
+    }
     return env.ASSETS.fetch(request);
   }
 };
