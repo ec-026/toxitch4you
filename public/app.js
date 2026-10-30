@@ -37,7 +37,7 @@ async function startGame(){
     // No query parameter means Ruffle's default renderer (same as the tested local app).
     const testRenderer=window.__hknRendererTest || new URLSearchParams(location.search).get('renderer');
     const renderer=['canvas','webgl','wgpu-webgl'].includes(testRenderer)?testRenderer:null;
-    player.config={upgradeToHttps: false ,autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true,...(renderer?{preferredRenderer:renderer}:{})};
+    player.config={...window.RufflePlayer.config,base:location.origin+'/',...(renderer?{preferredRenderer:renderer}:{})};
     if(renderer)console.info('[toxitch4you] Ruffle renderer diagnostic:',renderer);
     $('game').appendChild(player);
     // Keep the same relative SWF URL as the locally verified build.
@@ -46,7 +46,7 @@ async function startGame(){
       if(!bridge&&role)status.textContent='GAME STILL STARTING — open F12 Console / Network for SWF errors';
     },14000);
     setInterval(checkBridge,600);
-    await player.ruffle().load('hongkongninja.swf');
+    await player.load(location.origin+'/hongkongninja.swf');
     if(status.textContent==='LOADING GAME...')status.textContent='GAME LOADED — WAITING FOR PARTNER';
   }catch(e){
     status.textContent='GAME LOAD FAILED: '+(e?.message||String(e));

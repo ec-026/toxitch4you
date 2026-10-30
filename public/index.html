@@ -39,4 +39,24 @@
 <div id="pauseOverlay" class="session-overlay pause-overlay" hidden><div class="overlay-content"><div class="overlay-kicker">CO-OP SESSION</div><h2>GAME PAUSED</h2><p>Either player can resume the game.</p></div></div>
 </div>
 <div class="game-chrome"><span class="game-logo">T4 / <b>HONG KONG NINJA</b></span><div class="session-state"><span id="role">CONNECTING</span><span class="separator">/</span><span id="status">WAITING FOR PARTNER</span><span class="separator">/</span><span id="bridge" class="sr-only">Bridge: waiting for a mission</span><span id="character" class="sr-only">Waiting for character selection</span><span class="room-code-text">—</span></div><div class="game-actions"><button id="copy" type="button">INVITE</button><button id="focus" type="button" aria-label="Toggle browser fullscreen">FULLSCREEN</button><button id="pauseButton" type="button">PAUSE</button><button id="leaveSession" type="button">EXIT</button></div></div><input id="roomLink" readonly class="sr-only"><span id="roomCode" class="sr-only"></span><pre id="log" hidden></pre></section>
+<script>
+// Configure Ruffle before loading its runtime, as the working Snokido player does.
+// The SWF lives at /hongkongninja.swf and external levels at /resource/level_N.swf.
+window.RufflePlayer = window.RufflePlayer || {};
+window.RufflePlayer.config = {
+  base: location.origin + '/',
+  autoplay: 'on',
+  unmuteOverlay: 'hidden',
+  backgroundColor: '#000000',
+  letterbox: 'off',
+  quality: 'high',
+  preloader: true,
+  upgradeToHttps: true,
+  warnOnUnsupportedContent: false,
+  scale: 'exactFit',
+  forceScale: true,
+  openUrlMode: 'deny',
+  allowScriptAccess: true
+};
+</script>
 <script src="https://unpkg.com/@ruffle-rs/ruffle/ruffle.js"></script><script src="app.js" defer></script></body></html>
