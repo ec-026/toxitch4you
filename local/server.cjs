@@ -41,7 +41,14 @@ function handle(c,msg){if(!msg||typeof msg!=='object')return;
    if(!msg.paused&&(r.hostAway||r.guestAway)){pauseBroadcast(r);return;}
 r.paused=msg.paused;r.pauseBy=c.role;pauseBroadcast(r);return}
  if(msg.type==='key'&&r.started&&!r.paused&&KEY_SET.has(msg.key)&&typeof msg.down==='boolean'){send(other(c),{type:'key',key:msg.key,down:msg.down});return}
- if(msg.type==='world-state'&&c.role==='host'&&r.started&&!r.paused&&r.guest&&typeof msg.snapshot==='string'&&msg.snapshot.length<16000){send(r.guest,{type:'world-state',snapshot:msg.snapshot});return}
+ if(['rtc-ready','rtc-offer','rtc-answer','rtc-ice'].includes(msg.type)&&r.host&&r.guest){
+  if(msg.type==='rtc-ready'&&c.role!=='guest')return;
+  if(msg.type==='rtc-offer'&&c.role!=='host')return;
+  if(msg.type==='rtc-answer'&&c.role!=='guest')return;
+  if(msg.type==='rtc-ice'&&(!msg.candidate||typeof msg.candidate.candidate!=='string'||msg.candidate.candidate.length>2500))return;
+  if((msg.type==='rtc-offer'||msg.type==='rtc-answer')&&(typeof msg.sdp!=='string'||msg.sdp.length>18000))return;
+  send(other(c),msg);return;
+ }
  if(msg.type==='ping')send(c,{type:'pong'});
 }
 function receive(c,chunk){c.buffer=Buffer.concat([c.buffer,chunk]);if(c.buffer.length>262144){c.socket.destroy();return}while(c.buffer.length>=2){const b=c.buffer;const opcode=b[0]&15,masked=!!(b[1]&128);let len=b[1]&127,offset=2;if(len===126){if(b.length<4)return;len=b.readUInt16BE(2);offset=4}else if(len===127){c.socket.destroy();return}if(!masked){c.socket.destroy();return}if(len>200000){c.socket.destroy();return}if(b.length<offset+4+len)return;const key=b.subarray(offset,offset+4);const payload=Buffer.from(b.subarray(offset+4,offset+4+len));for(let i=0;i<payload.length;i++)payload[i]^=key[i%4];c.buffer=b.subarray(offset+4+len);if(opcode===8){c.socket.end();return}if(opcode===9){c.socket.write(Buffer.from([0x8a,0]));continue}if(opcode!==1)continue;try{handle(c,JSON.parse(payload.toString('utf8')))}catch{}}}

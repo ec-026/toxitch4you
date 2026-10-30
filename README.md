@@ -1,37 +1,39 @@
-# Hong Kong Ninja — State Sync Phase 1 (test build, NOT full synchronization)
+# toxitch4you — single-instance co-op WebRTC TEST BUILD
 
-This patch is built against the exact `toxitch4you_cloudflare.zip` supplied in the conversation, plus the full JPEXS ActionScript export. It does not contain a new SWF or overwrite original game assets.
+This test build uses exactly **one Flash/Ruffle simulation per room**. The **host browser runs the SWF**, simulating both heroes, enemies, damage, pickups and levels. The **guest browser DOES NOT load the SWF**; instead it receives the host's game canvas as a WebRTC video stream. Guest keyboard input passes through the room WebSocket to the host's existing `hknRemoteDown/Up` bridge. The Cloudflare Durable Object only handles signaling and room/pause control, not gameplay simulation or media forwarding.
 
-## What is implemented
+**Not a validated production release.** Video connection and actual dual-player gameplay have not been browser-tested yet. This version uses public STUN only; a TURN service may be needed for restrictive or carrier-grade NAT. Browser video capture support and encoder performance vary. No game audio is streamed in this prototype. WebRTC latency is normal, and host tab suspension can stop video; keep the shared away-pause feature.
 
-- Host Flash bridge `hknGetWorldSnapshot()` reads the two hero XYZ positions and living enemy positions (`Global.camp3`, keyed by `myID`) every 150 ms.
-- Cloudflare Durable Object (and local test server) relays host-only `world-state` messages to the guest **without writing snapshots to persistent storage**.
-- Guest Flash bridge `hknApplyWorldSnapshot()` checks current mission/section/level and corrects matching hero and enemy XYZ positions.
-- Existing key relay, shared away-pause, room code, and session logic remain in place.
+## Safe install / deployment
 
-## What is NOT implemented — read carefully
+1. **Back up** the current working `toxitch4you_cloudflare` project and its `public/hongkongninja.swf`.
+2. Extract this ZIP to a **new directory**. Do not overwrite the old project while testing.
+3. Copy your **latest confirmed working, location-validation-fixed SWF** into `public/hongkongninja.swf` if it differs from the included current-project file. The SWF was not edited for this test.
+4. Run `npm install` and `npm run check` (Node.js required).
+5. For testing on your PC, use `start-local.bat`, then open **two different browser windows/profiles** at `http://localhost:8765`.
+6. Host: create room, click the original PLAY screen and choose a character. Guest: join code, click the video view to focus keys. Wait for video to connect, then use WASD / JKL. Both players should see **the same host game**.
+7. Only after a successful local test, copy updated project files to your existing Git checkout (keep its `.git` folder), and run your original `deploy-windows.bat` to push/deploy.
 
-**This is not full game-state synchronization.** The guest still runs its own enemy AI, collision detection, damage, animations, HP, pickups, spawning, and level transitions. Position corrections can look jerky and will not fix divergent kills, missing enemies, or progress. `myID` might not match when spawn orders differ. No snapshot is persisted for reconnection, and this iteration has not been compiled or tested as a SWF in two browsers. Do not deploy this patch publicly as a completed fix.
+### Test checklist
+- Host runs the game and sees both heroes; guest does **not** load a second SWF.
+- Guest receives live video (not a blank window); click the picture once before WASD / JKL.
+- Guest input moves Hero 2 **on the host screen**; host moves Hero 1.
+- Enemies, damage, health and level screen are exactly the same video on both screens.
+- Minimize either window: both pause; return and Resume Together.
+- Disconnect guest: stream closes safely; reconnect with a fresh room if necessary.
 
-## Windows test — minimal changes
+### Troubleshooting
+- `STREAM ERROR: Ruffle canvas unavailable`: Ruffle's canvas is not capturable in that browser; inspect the shadow DOM and update `findGameCanvas` in `public/app.js`.
+- `VIDEO CONNECTION FAILED`: peer-to-peer WebRTC failed. Test the same Wi-Fi first, then add properly configured TURN credentials. **Never commit TURN secrets to public JS.** Use a backend endpoint to mint short-lived TURN credentials.
+- Video is black but host game is visible: captureStream on the WebGL canvas may not yield pixels in your browser. A host-display capture prompt (`getDisplayMedia`) or another supported capture pathway would be required.
+- Guest can't move: click the video to focus it; make sure the SWF has the tested input bridge and that the host has reached mission gameplay.
+- Site loads but game black: use the SWF with the authorized Miniclip location-check fix, not an older debug SWF.
 
-1. Back up your working SWF and your Cloudflare project folder.
-2. Place the unmodified, **latest tested working** `hongkongninja.swf` somewhere safe. Do not use the debug overlay build.
-3. With JPEXS 26 installed, run `build-swf.bat`. It asks for the path to `ffdec-cli.exe` and the source SWF, and writes `hongkongninja_phase1_test.swf` in this patch folder. It never overwrites the source.
-4. If FFDec compilation fails, stop and share the error. You can instead import the one `.as` class with JPEXS GUI; do not discard errors.
-5. Reopen the test SWF in JPEXS, find `UserControl`, and verify callbacks `hknGetWorldSnapshot` and `hknApplyWorldSnapshot` are present. Preserve all other existing callbacks.
-6. In a **copy** of your project, replace `public/app.js`, `src/worker.js`, and `local/server.cjs` with the three files from this patch. Copy and rename the test SWF to `public/hongkongninja.swf` in that copy.
-7. Start local server with `start-local.bat`. Create/join with two browsers, test all seven keyboard controls, pause, room join, and spawn/kill behavior; compare two screens and watch for jumps or missing enemies.
-8. Only if the test does not regress gameplay, consider a separate Cloudflare preview deployment. Do not automatically run `deploy-windows.bat` on your production project yet: that publishes the test SWF and commits it to GitHub.
+### Files changed
+- `public/app.js`: Ruffle for host only, WebRTC video, guest keys, existing pause and room flows.
+- `public/index.html`: remote `<video>` for guest.
+- `public/style.css`: remote video viewport styling.
+- `src/worker.js`: room-scoped validated WebRTC signaling relay.
+- `local/server.cjs`: matching local signaling relay.
 
-## Next phase for real world authority
-
-Host needs to be the sole executor of enemy AI, hit/damage resolution, pickup collection, spawn/despawn, and section advancement. Guest needs authoritative entity creation/removal and replication of HP, animation/actions, projectiles, pickups and world progress, plus recovery from a snapshot on reconnect. These systems are interdependent in `BasicEnemy`, `BasicLiveObject`, `GameControl`, `BasicHero`, `BasicObject`, and related classes. A full conversion requires isolating those writes and testing every mission in two browsers, not only relaying positions. This patch starts with the communication path and leaves the tested build untouched.
-
-## Backout
-
-Restore backed-up `public/app.js`, `src/worker.js`, `local/server.cjs`, and `public/hongkongninja.swf`. Do not import replacement source into the only copy of your SWF.
-
-## JPEXS reference
-
-JPEXS documents the `-replace <infile> <outfile> <scriptname> <ActionScript-file>` command and `-importScript` bulk import. For a one-class change, `-replace` is safer than importing all decompiled classes. See https://github.com/jindrapetrik/jpexs-decompiler/wiki/Commandline-arguments
+All other website files and game assets come from your uploaded Cloudflare project.
