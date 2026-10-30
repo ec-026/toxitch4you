@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hong Kong Ninja · Load Test</title>
+<style>html,body{margin:0;height:100%;background:#0b0c0e;color:#f3f7fb;font:14px system-ui,sans-serif}header{height:58px;box-sizing:border-box;border-bottom:1px solid #353943;display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:12px}strong{color:#00f0ff}#status{font-size:12px;color:#bbc3cc}main{height:calc(100% - 58px);display:grid;place-items:center}#screen{width:min(100%,calc((100vh - 70px)*590/420));height:min(calc(100vh - 70px),calc(100vw*420/590));min-height:260px;background:#000}ruffle-player{width:100%;height:100%;display:block}a{color:#00f0ff}#details{position:fixed;bottom:12px;left:12px;padding:8px 12px;background:#15191de8;border:1px solid #333;font-size:11px;max-width:90vw}</style></head>
+<body><header><div><strong>T4</strong> · Standalone game load test</div><span id="status">Initializing Ruffle…</span></header><main><div id="screen"></div></main><div id="details">This page does not connect to multiplayer rooms. <a href="/">Return to library</a></div>
+<script src="https://unpkg.com/@ruffle-rs/ruffle/ruffle.js"></script>
+<script>
+(async function () {
+  const status=document.getElementById('status');
+  const update=s=>{status.textContent=s;console.info('[HKN standalone]',s)};
+  try {
+    if(!window.RufflePlayer) throw Error('Ruffle library missing');
+    const player=window.RufflePlayer.newest().createPlayer();
+    player.style.width='100%';player.style.height='100%';
+    player.config={autoplay:'on',unmuteOverlay:'visible',letterbox:'on',scale:'showAll',allowScriptAccess:true};
+    document.getElementById('screen').appendChild(player);
+    update('Loading original SWF…');
+    await player.ruffle().load('/hongkongninja.swf');
+    update('SWF loaded — check if the PLAY menu appears');
+    window.hknTestPlayer=player;
+    setTimeout(()=>{
+      let ping=null;
+      try{ping=player.ruffle().callExternalInterface('hknBridgePing')}catch(e){ping=String(e)}
+      console.info('[HKN standalone] hknBridgePing:',ping);
+      if(ping==='HKN-DUAL-READY')update('Flash startup bridge is READY');
+    },2500);
+  }catch(e){update('Load error: '+e.message);console.error(e)}
+})();
+</script></body></html>
