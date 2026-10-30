@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0B0C0E"><link rel="icon" type="image/png" href="favicon.png"><meta name="description" content="toxitch4you — a cozy little co-op arcade. Play Hong Kong Ninja with someone you love."><link rel="preload" as="image" href="hkn-capsule.webp"><title>toxitch4you — Library</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="libraryShell" class="library-shell">
+  <header class="topbar">
+    <div class="brand" aria-label="toxitch4you">
+      <img class="brand-icon" src="t4-logo.png" width="52" height="52" alt="T4 logo" decoding="async"><div class="brand-name"><strong>toxitch<span>4</span>you</strong><small>CO-OP ARCADE</small></div>
+    </div>
+    <div class="header-meta"><span class="online-mark"></span> GAME LIBRARY <span class="header-separator">/</span> 01 TITLE</div>
+    <button id="openNotice" class="header-notice" type="button">A NOTE FROM THE CREATOR <span aria-hidden="true">↗</span></button>
+  </header>
+  <main class="dashboard">
+    <div class="library-heading"><span>THE LIBRARY</span><strong>01 <span>/</span> 01</strong></div>
+    <section class="game-hub" aria-labelledby="gameHeading">
+      <div class="game-poster"><img decoding="async" fetchpriority="high" src="hkn-capsule.webp" alt="Hong Kong Ninja original game artwork"><div class="poster-label">01 / 01</div></div>
+      <div class="game-details">
+        <div class="genre-line"><span class="online-mark"></span> AVAILABLE NOW <span class="mid-dot">/</span> 2-PLAYER CO-OP <span class="mid-dot">/</span> MACROJOY</div>
+        <h1 id="gameHeading">HONG KONG NINJA</h1>
+        <div class="game-description">Classic side-scrolling combat. Two fighters, one mission. Play together in a private room.</div>
+        <div class="game-actions"><button class="primary-action" type="button" id="openCreate">CREATE ROOM <span>＋</span></button><button class="secondary-action" type="button" id="openJoin">JOIN ROOM <span>↗</span></button></div>
+        <div class="game-details-bottom"><div class="detail-data"><span>PLAYERS</span><strong>2 ONLINE</strong></div><div class="detail-data"><span>PLATFORM</span><strong>BROWSER / FLASH</strong></div><div class="detail-data"><span>INPUT</span><strong>KEYBOARD</strong></div></div>
+        <div class="control-guide"><span>CONTROLS</span><strong>W A S D</strong> MOVE <strong>J</strong> ATTACK <strong>K</strong> JUMP <strong>L</strong> SKILL</div>
+      </div>
+    </section>
+    <footer class="library-footer"><span>TOXITCH4YOU / PRIVATE CO-OP ARCADE</span><span>MORE GAMES COMING SOON</span></footer>
+  </main>
+</div>
+<div id="noticeDialog" class="notice-backdrop" hidden>
+ <section class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+  <div class="notice-top"><span>MESSAGE / 001</span><button id="dismissNoticeTop" type="button" aria-label="Close notice">×</button></div>
+  <div class="notice-copy"><div class="notice-eyebrow">A NOTE FROM THE CREATOR</div><h2 id="noticeTitle">WELCOME TO THE VAULT.</h2><p>Notice: I built this platform explicitly for my girlfriend, but you are more than welcome to enjoy it, my friend. Keep your wife happy. Happy wife, happy life. More co-op multiplayer titles will be added to the library vault soon.</p></div>
+  <button id="dismissNotice" type="button" class="primary-action">CONTINUE TO LIBRARY <span>↗</span></button>
+ </section>
+</div>
+<div id="roomDialog" class="modal-backdrop" hidden><section class="room-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog-top"><span id="dialogIndex">ROOM / SETUP</span><button type="button" id="closeDialog" aria-label="Close">×</button></div><h2 id="dialogTitle">CREATE A SESSION</h2><p id="dialogDescription">A private co-op room for you and one other player.</p><div id="lobby"><div class="room-controls"><button id="create" class="primary-action" type="button">CREATE PRIVATE ROOM <span>↗</span></button><div class="join-controls"><label for="joinCode">INVITE CODE</label><div><input id="joinCode" maxlength="8" placeholder="8-CHARACTER CODE" autocomplete="off" spellcheck="false"><button id="join" class="secondary-action" type="button">JOIN <span>↗</span></button></div></div></div><p id="lobbyHelp" class="assistive">Rooms are limited to two players. You can also join using an invite link.</p><p id="lobbyError" class="form-error" aria-live="polite"></p></div></section></div>
+<section id="playArea" class="play-area" hidden aria-label="Game session"><div class="game-viewport"><div id="game" tabindex="0"></div>
+<div id="hostWait" class="session-overlay" hidden><div class="overlay-content"><div class="overlay-kicker">SESSION PREPARATION</div><h2>WAITING FOR PLAYER 2</h2><p id="hostWaitText">Waiting for your partner to join...</p><div class="load-line"><span></span></div><small>Your mission will start when both players are ready.</small><div class="overlay-room">ROOM <strong class="room-code-text">—</strong></div><button class="overlay-copy" type="button" id="copyRoom">COPY INVITE LINK</button></div></div>
+<div id="guestWait" class="session-overlay" hidden><div class="overlay-content"><div class="overlay-kicker">SESSION PREPARATION</div><h2>WAITING FOR HOST</h2><p>Waiting for Player 1 to start the mission.</p><div class="load-line"><span></span></div><small>You'll join automatically when the game is ready.</small><div class="overlay-room">ROOM <strong class="room-code-text">—</strong></div></div></div>
+<div id="pauseOverlay" class="session-overlay pause-overlay" hidden><div class="overlay-content"><div class="overlay-kicker">CO-OP SESSION</div><h2>GAME PAUSED</h2><p>Either player can resume the game.</p></div></div>
+</div>
+<div class="game-chrome"><span class="game-logo">T4 / <b>HONG KONG NINJA</b></span><div class="session-state"><span id="role">CONNECTING</span><span class="separator">/</span><span id="status">WAITING FOR PARTNER</span><span class="separator">/</span><span id="bridge" class="sr-only">Bridge: waiting for a mission</span><span id="character" class="sr-only">Waiting for character selection</span><span class="room-code-text">—</span></div><div class="game-actions"><button id="copy" type="button">INVITE</button><button id="focus" type="button" aria-label="Toggle browser fullscreen">FULLSCREEN</button><button id="pauseButton" type="button">PAUSE</button><button id="leaveSession" type="button">EXIT</button></div></div><input id="roomLink" readonly class="sr-only"><span id="roomCode" class="sr-only"></span><pre id="log" hidden></pre></section>
+<script src="https://unpkg.com/@ruffle-rs/ruffle/ruffle.js"></script><script src="app.js" defer></script></body></html>

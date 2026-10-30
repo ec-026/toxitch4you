@@ -1,0 +1,36 @@
+# Dependencies, local build artifacts and development state
+node_modules/
+.wrangler/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local environment and secrets (use Cloudflare secret storage instead)
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.credentials
+credentials.json
+service-account*.json
+*.secret
+*.secrets
+.npmrc
+.wrangler.toml
+
+# Do not commit local auth material or editor private settings
+.ssh/
+.github-token
+.cloudflare-token
+.vscode/settings.json
+.idea/

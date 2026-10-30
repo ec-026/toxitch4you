@@ -1,0 +1,12 @@
+{
+  "name": "toxitch4you",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8765",
+    "deploy": "wrangler deploy",
+    "check": "node --check src/worker.js && node --check public/app.js && node --check local/server.cjs"
+  },
+  "devDependencies": {"wrangler": "^4.34.0"}
+}
