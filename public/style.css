@@ -82,3 +82,12 @@ button:focus-visible,input:focus-visible{outline:2px solid #00F0FF!important;out
 #playArea .game-viewport{background:#000}
 @media(max-width:640px){.topbar{height:70px}.brand-icon{width:42px;height:42px}.brand-name strong{font-size:19px}.brand-name small{font-size:8px}.game-details h1{font-size:clamp(32px,10vw,46px)}.game-actions .primary-action,.game-actions .secondary-action{min-width:140px;flex:1}.notice-copy{padding:23px 22px 10px}.notice-dialog>.primary-action{margin:0 22px 22px;width:calc(100% - 44px)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+
+/* Away/return pause — overlay is interactive and never silently auto-resumes. */
+.pause-overlay{pointer-events:auto;}
+.pause-overlay .overlay-content{background:#171a1e;border:1px solid #343942;padding:30px;max-width:460px;width:100%;border-radius:14px;}
+.away-status{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0;color:#e4e6e9;font-size:11px;}
+.away-status span{background:#252a30;border:1px solid #404750;padding:10px 13px;border-radius:9px;}
+#resumeTogether{margin:4px 0 16px;border-radius:9px;}
+#resumeTogether:disabled{opacity:.45;cursor:not-allowed;}
+#resumeHint{display:block;}

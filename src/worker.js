@@ -6,7 +6,7 @@ const encode = value => JSON.stringify(value);
 export class GameRoom {
   constructor(ctx, env) {
     this.ctx = ctx;
-    this.state = {hostCharacter:null, started:false, hostReady:false, guestReady:false, paused:false, pauseBy:null};
+    this.state = {hostCharacter:null, started:false, hostReady:false, guestReady:false, paused:false, pauseBy:null,hostAway:false,guestAway:false};
     this.ctx.blockConcurrencyWhile(async () => {
       this.state = (await this.ctx.storage.get('room')) || this.state;
     });
@@ -18,11 +18,13 @@ export class GameRoom {
     return {host, guest};
   }
   send(ws, payload) { if (ws) { try { ws.send(encode(payload)); } catch (_) {} } }
+  away() {return {host:!!this.state.hostAway,guest:!!this.state.guestAway};}
+  publishPause() {this.broadcast({type:'pause-state',paused:!!this.state.paused,by:this.state.pauseBy,away:this.away()});}
   async save() { await this.ctx.storage.put('room', this.state); }
   status(room) {
     const {host,guest}=this.sockets();
-    this.send(host,{type:'status',role:'host',friend:!!guest,room,paused:this.state.paused});
-    this.send(guest,{type:'status',role:'guest',friend:!!host,room,paused:this.state.paused});
+    this.send(host,{type:'status',role:'host',friend:!!guest,room,paused:this.state.paused,away:this.away()});
+    this.send(guest,{type:'status',role:'guest',friend:!!host,room,paused:this.state.paused,away:this.away()});
   }
   broadcast(payload) {const {host,guest}=this.sockets();this.send(host,payload);this.send(guest,payload);}
   async fetch(request) {
@@ -48,10 +50,10 @@ export class GameRoom {
   async startIfReady() {
     const {host,guest}=this.sockets();
     if(this.state.started||!host||!guest||this.state.hostCharacter===null||!this.state.hostReady||!this.state.guestReady)return;
-    this.state.started=true;this.state.paused=false;this.state.pauseBy=null;
+    this.state.started=true;this.state.paused=!!(this.state.hostAway||this.state.guestAway);this.state.pauseBy=this.state.paused?'away':null;
     await this.save();
     this.broadcast({type:'start',hostCharacter:this.state.hostCharacter});
-    this.broadcast({type:'pause-state',paused:false,by:null});
+    this.publishPause();
   }
   async webSocketMessage(ws, raw) {
     if(typeof raw !== 'string' || raw.length > 4096) return;
@@ -68,9 +70,17 @@ export class GameRoom {
       if(role==='host')this.state.hostReady=true;else this.state.guestReady=true;
       await this.save();await this.startIfReady();return;
     }
+    if(m.type==='presence' && typeof m.away==='boolean') {
+      const field=role==='host'?'hostAway':'guestAway';
+      this.state[field]=m.away;
+      if(m.away && this.state.started){this.state.paused=true;this.state.pauseBy='away';}
+      await this.save();this.publishPause();return;
+    }
     if(m.type==='pause' && this.state.started && host && guest && typeof m.paused==='boolean') {
+      if(!m.paused && (this.state.hostAway || this.state.guestAway)) {this.publishPause();return;}
+
       this.state.paused=m.paused;this.state.pauseBy=role;
-      await this.save();this.broadcast({type:'pause-state',paused:this.state.paused,by:role});return;
+      await this.save();this.publishPause();return;
     }
     if(m.type==='key'&&this.state.started&&!this.state.paused&&KEYS.has(m.key)&&typeof m.down==='boolean'){
       this.send(role==='host'?guest:host,{type:'key',key:m.key,down:m.down});return;
@@ -87,7 +97,7 @@ export class GameRoom {
       this.state={hostCharacter:null,started:false,hostReady:false,guestReady:false,paused:false,pauseBy:null};
       this.send(other,{type:'peer-left'});this.send(other,{type:'character-reset'});
     }else{
-      this.state.guestReady=false;this.state.started=false;this.state.paused=false;this.state.pauseBy=null;
+      this.state.guestReady=false;this.state.started=false;this.state.paused=false;this.state.pauseBy=null;this.state.guestAway=false;
       this.send(other,{type:'peer-left'});
     }
     await this.save();

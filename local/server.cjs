@@ -7,12 +7,13 @@ const KEY_SET=new Set(['left','right','up','down','attack','jump','skill']);
 function send(c,msg){if(!c||c.closed)return;const b=Buffer.from(JSON.stringify(msg));let header;if(b.length<126){header=Buffer.from([129,b.length])}else if(b.length<65536){header=Buffer.alloc(4);header[0]=129;header[1]=126;header.writeUInt16BE(b.length,2)}else{return}try{c.socket.write(Buffer.concat([header,b]))}catch{}}
 function code(){let id;do{id=crypto.randomBytes(4).toString('hex').toUpperCase()}while(rooms.has(id));return id}
 function other(c){const r=rooms.get(c.room);if(!r)return null;return c.role==='host'?r.guest:r.host}
-function status(r){if(!r)return;send(r.host,{type:'status',role:'host',friend:!!r.guest,room:r.id,paused:!!r.paused});send(r.guest,{type:'status',role:'guest',friend:!!r.host,room:r.id,paused:!!r.paused})}
-function pauseBroadcast(r){const message={type:'pause-state',paused:!!r.paused,by:r.pauseBy||null};send(r.host,message);send(r.guest,message)}
-function leave(c){const r=rooms.get(c.room);if(!r)return;const o=other(c);if(r.host===c){r.host=null;r.hostCharacter=null;r.started=false;r.hostReady=false;r.guestReady=false;r.paused=false;r.pauseBy=null;send(o,{type:'peer-left'});send(o,{type:'character-reset'});}if(r.guest===c){r.guest=null;r.guestReady=false;r.started=false;r.paused=false;r.pauseBy=null;send(o,{type:'peer-left'})}c.room=null;c.role=null; if(!r.host&&!r.guest){rooms.delete(r.id)}else status(r)}
+function away(r){return {host:!!r.hostAway,guest:!!r.guestAway}}
+function status(r){if(!r)return;send(r.host,{type:'status',role:'host',friend:!!r.guest,room:r.id,paused:!!r.paused,away:away(r)});send(r.guest,{type:'status',role:'guest',friend:!!r.host,room:r.id,paused:!!r.paused,away:away(r)})}
+function pauseBroadcast(r){const message={type:'pause-state',paused:!!r.paused,by:r.pauseBy||null,away:away(r)};send(r.host,message);send(r.guest,message)}
+function leave(c){const r=rooms.get(c.room);if(!r)return;const o=other(c);if(r.host===c){r.host=null;r.hostCharacter=null;r.started=false;r.hostReady=false;r.guestReady=false;r.paused=false;r.pauseBy=null;r.hostAway=false;r.guestAway=false;send(o,{type:'peer-left'});send(o,{type:'character-reset'});}if(r.guest===c){r.guest=null;r.guestReady=false;r.started=false;r.paused=false;r.pauseBy=null;r.hostAway=false;r.guestAway=false;send(o,{type:'peer-left'})}c.room=null;c.role=null; if(!r.host&&!r.guest){rooms.delete(r.id)}else status(r)}
 function disconnect(c){if(c.closed)return;c.closed=true;leave(c);peers.delete(c.socket)}
 function join(c,id,create){if(c.role){send(c,{type:'error',reason:'Already in a room'});return}let r;
- if(create){id=(typeof id==='string'&&/^[A-F0-9]{8}$/.test(id))?id:code();if(rooms.has(id)){send(c,{type:'error',reason:'Room already exists'});return}r={id,host:c,guest:null,hostCharacter:null,started:false,hostReady:false,guestReady:false,paused:false,pauseBy:null};rooms.set(id,r);c.role='host';}
+ if(create){id=(typeof id==='string'&&/^[A-F0-9]{8}$/.test(id))?id:code();if(rooms.has(id)){send(c,{type:'error',reason:'Room already exists'});return}r={id,host:c,guest:null,hostCharacter:null,started:false,hostReady:false,guestReady:false,paused:false,pauseBy:null,hostAway:false,guestAway:false};rooms.set(id,r);c.role='host';}
  else{if(typeof id!=='string'||!/^[A-F0-9]{8}$/.test(id)){send(c,{type:'error',reason:'Enter an 8-character room code'});return}r=rooms.get(id);if(!r){send(c,{type:'error',reason:'Room not found'});return}if(!r.host||r.guest){send(c,{type:'error',reason:'Room full or host disconnected'});return}r.guest=c;c.role='guest';}
  c.room=id;send(c,{type:'welcome',role:c.role,room:id});if(c.role==='guest'&&r.hostCharacter!==null)send(c,{type:'character',hostCharacter:r.hostCharacter});status(r);
 }
@@ -21,7 +22,7 @@ function tryStart(r){
  r.started=true;
  send(r.host,{type:'start',hostCharacter:r.hostCharacter});
  send(r.guest,{type:'start',hostCharacter:r.hostCharacter});
- r.paused=false;r.pauseBy=null;pauseBroadcast(r);
+ r.paused=!!(r.hostAway||r.guestAway);r.pauseBy=r.paused?'away':null;pauseBroadcast(r);
 }
 function handle(c,msg){if(!msg||typeof msg!=='object')return;
  if(msg.type==='create'){join(c,msg.room,true);return}
@@ -31,7 +32,14 @@ function handle(c,msg){if(!msg||typeof msg!=='object')return;
  const r=rooms.get(c.room);if(!r)return;
  if(msg.type==='character'&&c.role==='host'&&(msg.character===1||msg.character===2)){r.hostCharacter=msg.character;r.started=false;send(r.guest,{type:'character',hostCharacter:r.hostCharacter});tryStart(r);return}
  if(msg.type==='ready'){if(c.role==='host')r.hostReady=true;else r.guestReady=true;tryStart(r);return}
- if(msg.type==='pause'&&r.started&&r.host&&r.guest&&typeof msg.paused==='boolean'){r.paused=msg.paused;r.pauseBy=c.role;pauseBroadcast(r);return}
+ if(msg.type==='presence'&&typeof msg.away==='boolean'){
+   if(c.role==='host')r.hostAway=msg.away;else r.guestAway=msg.away;
+   if(msg.away&&r.started){r.paused=true;r.pauseBy='away'}
+   pauseBroadcast(r);return;
+ }
+ if(msg.type==='pause'&&r.started&&r.host&&r.guest&&typeof msg.paused==='boolean'){
+   if(!msg.paused&&(r.hostAway||r.guestAway)){pauseBroadcast(r);return;}
+r.paused=msg.paused;r.pauseBy=c.role;pauseBroadcast(r);return}
  if(msg.type==='key'&&r.started&&!r.paused&&KEY_SET.has(msg.key)&&typeof msg.down==='boolean'){send(other(c),{type:'key',key:msg.key,down:msg.down});return}
  if(msg.type==='ping')send(c,{type:'pong'});
 }
