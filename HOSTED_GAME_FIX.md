@@ -1,18 +1,14 @@
-# Cloudflare Ruffle game-loading fix
+# Ruffle hosted-game troubleshooting
 
-This edition retains the existing SWF and multiplayer scripts, changing only the Cloudflare hosting behavior and Flash loader diagnostics.
+This revision removes the HEAD/content-type preflight added in the previous patch and restores the exact locally-tested relative SWF URL. The earlier strict preflight could itself prevent boot.
 
-## Why this patch
+## After deployment
+1. Hard-refresh with Ctrl+Shift+R or use incognito.
+2. Create a room and wait for the SWF to display.
+3. If the black screen remains, open DevTools F12 > Network > All, tick Preserve log and reload. Filter by `swf`, then inspect status + response type of `hongkongninja.swf` and `resource/level_1.swf`. Open Console and copy red errors.
+4. If the first SWF is 200 but level 1 never starts, the SWF itself may be requesting another URL or a Flash security context; inspect request URLs and Ruffle console messages.
+5. Compare with your working localhost build under the same Ruffle version.
 
-Hong Kong Ninja loads `/resource/level_1.swf` through `/resource/level_6.swf` after loading its main SWF. Cloudflare's static asset MIME inference and Ruffle URL resolution may differ from the local Node server. This patch explicitly routes those requests through the Worker with `application/x-shockwave-flash`, passes Ruffle an absolute SWF URL and base path, and performs an inexpensive HEAD request preflight. It does not prove this was the root cause; inspect browser console if black persists.
+**A direct SWF URL downloading is normal and does not prove that Ruffle can execute it or load all its linked assets.**
 
-## Installation
-
-1. Back up your existing `toxitch4you_cloudflare` directory.
-2. Copy the contents of this ZIP on top of that directory, retaining its `.git` folder (if present).
-3. Run `deploy-windows.bat` to push the fix and redeploy the Worker.
-4. Open the site in a fresh incognito window and create a room.
-5. Check `https://toxitch4you.notanormalcoder.workers.dev/hongkongninja.swf` and `/resource/level_1.swf` by opening URLs. They should download or display binary data, not HTML/error text.
-6. If still black, press F12 > Console and Network, filter for `swf` and `ruffle`, and share the red errors and HTTP status codes. The game top status also reports asset preflight errors.
-
-Cloudflare credentials and account secrets are not part of this ZIP. The SWF and six level files are unchanged.
+This build has been checked for syntax but has not been verified in live Chrome against your Cloudflare account.
