@@ -37,7 +37,7 @@ async function startGame(){
     // No query parameter means Ruffle's default renderer (same as the tested local app).
     const testRenderer=window.__hknRendererTest || new URLSearchParams(location.search).get('renderer');
     const renderer=['canvas','webgl','wgpu-webgl'].includes(testRenderer)?testRenderer:null;
-    player.config={autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true,...(renderer?{preferredRenderer:renderer}:{})};
+    player.config={upgradeToHttps: false ,autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true,...(renderer?{preferredRenderer:renderer}:{})};
     if(renderer)console.info('[toxitch4you] Ruffle renderer diagnostic:',renderer);
     $('game').appendChild(player);
     // Keep the same relative SWF URL as the locally verified build.
