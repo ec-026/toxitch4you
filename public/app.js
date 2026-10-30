@@ -2,6 +2,7 @@
 const $=s=>document.getElementById(s);
 const keyMap={KeyA:['left',37],KeyD:['right',39],KeyW:['up',38],KeyS:['down',40],KeyJ:['attack',90],KeyK:['jump',88],KeyL:['skill',67],ArrowLeft:['left',37],ArrowRight:['right',39],ArrowUp:['up',38],ArrowDown:['down',40]};
 const codes={left:37,right:39,up:38,down:40,attack:90,jump:88,skill:67};
+window.__hknRendererTest=new URLSearchParams(location.search).get('renderer');
 let socket=null,role=null,friend=false,player=null,bridge=false,focused=false,hostCharacter=null,characterApplied=false,desired=null,hostStartSent=false,guestStarted=false,guestTitleAdvanced=false,hostStarted=false,selectionReadySent=false,roomPaused=false,pauseApplied=null;
 const held=new Set(),remoteHeld=new Set();
 window.hknGetRole=()=>role||'';
@@ -32,7 +33,12 @@ async function startGame(){
     status.textContent='LOADING GAME...';
     if(!window.RufflePlayer)throw Error('Ruffle script did not load');
     player=window.RufflePlayer.newest().createPlayer();
-    player.config={autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true};
+    // Optional renderer test: add ?renderer=canvas or ?renderer=webgl to the URL.
+    // No query parameter means Ruffle's default renderer (same as the tested local app).
+    const testRenderer=window.__hknRendererTest || new URLSearchParams(location.search).get('renderer');
+    const renderer=['canvas','webgl','wgpu-webgl'].includes(testRenderer)?testRenderer:null;
+    player.config={autoplay:'on',unmuteOverlay:'visible',letterbox:'off',scale:'exactFit',forceScale:true,allowScriptAccess:true,...(renderer?{preferredRenderer:renderer}:{})};
+    if(renderer)console.info('[toxitch4you] Ruffle renderer diagnostic:',renderer);
     $('game').appendChild(player);
     // Keep the same relative SWF URL as the locally verified build.
     // Do not block startup with HEAD/MIME checks: some edge hosts handle HEAD differently.
