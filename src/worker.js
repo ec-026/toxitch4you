@@ -56,7 +56,7 @@ export class GameRoom {
     this.publishPause();
   }
   async webSocketMessage(ws, raw) {
-    if(typeof raw !== 'string' || raw.length > 4096) return;
+    if(typeof raw !== 'string' || raw.length > 18000) return;
     let m;try{m=JSON.parse(raw)}catch{return}
     if(!m||typeof m!=='object')return;
     const a=ws.deserializeAttachment(),role=a?.role;if(!role)return;
@@ -84,6 +84,10 @@ export class GameRoom {
     }
     if(m.type==='key'&&this.state.started&&!this.state.paused&&KEYS.has(m.key)&&typeof m.down==='boolean'){
       this.send(role==='host'?guest:host,{type:'key',key:m.key,down:m.down});return;
+    }
+    if(m.type==='world-state' && role==='host' && this.state.started && !this.state.paused && guest && typeof m.snapshot==='string' && m.snapshot.length<16000) {
+      // Ephemeral relay only: never persist frequent frame snapshots to DO storage.
+      this.send(guest,{type:'world-state',snapshot:m.snapshot});return;
     }
     if(m.type==='ping')this.send(ws,{type:'pong'});
   }

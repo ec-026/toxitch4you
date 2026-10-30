@@ -34,6 +34,7 @@ if(m.type==='start'){if(role==='host'){hostStarted=true;guestStarted=true;}else{
 if(m.type==='character-reset'){hostStarted=false;selectionReadySent=false;hostCharacter=null;characterApplied=false;guestStarted=false;guestTitleAdvanced=false;$('guestWait').hidden=false;$('character').textContent='Waiting for host to select a character';}
 if(m.type==='status'){if(typeof m.paused==='boolean')setPause(m.paused,m.away);$('status').textContent=m.friend?'PARTNER CONNECTED':'WAITING FOR PARTNER';friend=!!m.friend;if(!friend){setPause(false,{host:false,guest:false});releaseRemote();selectionReadySent=false}showHostWait()}
 if(m.type==='error'){$('lobbyError').textContent=m.reason||'Unable to join';desired=null}
+if(m.type==='world-state'&&role==='guest'&&bridge&&characterApplied&&typeof m.snapshot==='string'){flash('hknApplyWorldSnapshot',m.snapshot);}
 if(m.type==='key'&&codes[m.key]&&typeof m.down==='boolean'){if(m.down){if(!remoteHeld.has(m.key)){remoteHeld.add(m.key);flash('hknRemoteDown',codes[m.key])}}else{remoteHeld.delete(m.key);flash('hknRemoteUp',codes[m.key])}}
 if(m.type==='peer-left'){setPause(false,{host:false,guest:false});releaseRemote();hostStarted=false;guestStarted=false;selectionReadySent=false;showHostWait();if(role==='guest'){$('guestWait').hidden=false;$('character').textContent='Host disconnected. Waiting for Player 1...';}}};socket.onclose=e=>{releaseRemote();setPause(true);if(role){$('status').textContent='CONNECTION LOST — REJOIN ROOM';}else if(desired){$('lobbyError').textContent=e.code===1006?'Room unavailable, full, or connection failed.':'Connection closed. Please try again.';}socket=null};socket.onerror=()=>log('WebSocket connection error')}
 async function startGame(){
@@ -64,6 +65,8 @@ async function startGame(){
   }finally{if(bootTimer&&bridge)clearTimeout(bootTimer)}
 }
 
+// Periodic host position snapshots. Combat/AI authority is not implemented yet.
+setInterval(()=>{if(role==='host'&&bridge&&characterApplied&&!roomPaused&&friend){const snapshot=flash('hknGetWorldSnapshot');if(typeof snapshot==='string'&&snapshot.length>0&&snapshot.length<16000)send({type:'world-state',snapshot});}},150);
 function showHostWait(){
  const mask=$('hostWait');if(!mask)return;
  mask.hidden=!(role==='host'&&hostCharacter!==null&&!hostStarted);
